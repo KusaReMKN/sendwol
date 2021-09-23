@@ -1,0 +1,18 @@
+PROGRAM	= woltest
+OBJS	= main.o
+VPATH	= src
+
+CC	= cc
+CCFLAG	= -Wall
+
+RM	= rm -f
+
+.PHONY:	all
+all:	$(PROGRAM)
+
+$(PROGRAM):	$(OBJS)
+	$(CC) -o $@ $^
+
+.PHONY:	clean
+clean:
+	$(RM) $(PROGRAM) $(OBJS)
