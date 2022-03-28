@@ -1,0 +1,88 @@
+.\"
+.\" Copyright (c) 2022 KusaReMKN
+.\"     Available under the 2-Clause BSD License
+.\"
+.Dd 28th March 2022
+.Dt SENDWOL 1
+.Os
+.Sh NAME
+.Nm sendwol
+.Nd send Wake-on-LAN magic packets
+.Sh SYNOPSIS
+.Nm
+.Op Fl 4 | Fl 6
+.Op Fl b | Fl a Ar address | Fl h Ar hostname
+.Op Fl i Ar interface
+.Op Fl p Ar port | Fl s Ar service
+.Ar target ...
+.Sh DESCRIPTION
+The
+.Nm
+utility wakes up the
+.Ar target
+by sending Wake-on-LAN magic packets over UDP.
+Obviously, the
+.Ar target
+needs to support Wake-on-LAN technology.
+.Pp
+The following options are available:
+.Bl -tag
+.It Fl 4
+Force to use IPv4 only.
+.It Fl 6
+Force to use IPv6 only.
+.It Fl b
+Use the broadcast address of the interface as destination.
+This is the default.
+.It Fl a Ar address , Fl h Ar hostname
+Specify the destination address or host name.
+.It Fl i Ar interface
+Specify the name of the interface from which packets are sent.
+This option applies only if the UDP destination is a multicast address
+.Pq IPv4/IPv6 ,
+or link-local/site-local unicast address
+.Pq IPv6 .
+.It Fl p Ar port , Fl s Ar service
+Specify the destination port number or service name.
+The default value is
+.Ql 9 .
+.El
+.Sh EXIT STATUS
+.Ex -std
+.Sh EXAMPLES
+The following will broadcast Wake-on-LAN magic packets to wake up targets
+.Ql 00:00:5e:00:53:34
+and
+.Ql 00:00:5e:00:53:59 .
+.Bd -literal -offset indent
+% sendwol '00:00:5e:00:53:34' '00:00:5e:00:53:59'
+.Ed
+.Pp
+The following will send the magic packets to all nodes
+on the network link attached to the interface
+.Ql eth0 .
+The address
+.Ql ff02::1
+is named the link-local all-nodes multicast address,
+and the packets would reach every node on the network link.
+.Bd -literal -offset indent
+% sendwol -6 -a ff02::1 -i eth0 00-00-5e-00-53-15
+.Ed
+.Sh SEE ALSO
+.Xr getaddrinfo 3 ,
+.Xr getifaddrs 3 ,
+.Xr inet 4 ,
+.Xr inet6 4 ,
+.Xr ip 4 ,
+.Xr ip6 4 ,
+.Xr udp 4 ,
+.Xr ifconfig 8
+.Sh COPYRIGHT
+Copyright \(co 2022
+.An KusaReMKN Aq Lk https://github.com/KusaReMKN .
+.br
+This document and software are available under
+.Sy the 2-Clause BSD License .
+.Sh BUGS
+To report bugs, please create an issue.
+.Aq Lk https://github.com/kusaremkn/sendwol/issue
