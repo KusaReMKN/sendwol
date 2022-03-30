@@ -134,6 +134,7 @@ main(int argc, char *argv[])
 	fd = broadcast
 		? brd_connect(domain, servname, interface)
 		: udp_connect(domain, nodename, servname, interface);
+	yes = 1;
 	if (setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &yes, sizeof(yes)) == -1)
 		err(1, "SO_BROADCAST");
 
