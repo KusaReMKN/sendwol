@@ -2,7 +2,7 @@
 .\" Copyright (c) 2022 KusaReMKN
 .\"     Available under the 2-Clause BSD License
 .\"
-.Dd 28th March 2022
+.Dd 30th March 2022
 .Dt SENDWOL 1
 .Os
 .Sh NAME
@@ -12,6 +12,7 @@
 .Nm
 .Op Fl 4 | Fl 6
 .Op Fl b | Fl a Ar address | Fl h Ar hostname
+.Op Fl f Ar file
 .Op Fl i Ar interface
 .Op Fl p Ar port | Fl s Ar service
 .Ar target ...
@@ -36,6 +37,26 @@ Use the broadcast address of the interface as destination.
 This is the default.
 .It Fl a Ar address , Fl h Ar hostname
 Specify the destination address or host name.
+.It Fl f Ar file
+Specify the database file containing the MAC addresses of the network hosts.
+The data is stored in the following format:
+.Bd -literal -offset indent
+.Ar MAC-address	host-name
+.Ed
+.Pp
+Each element is separated by any number of blank spaces and/or tab characters.
+If there is a hash character
+.Pq Ql #
+at the beginning of a line, the line is ignored as a comment.
+.Pp
+By default,
+.Pa $HOME/.sendwol
+and
+.Pa /etc/ethers
+are looked up in this order.
+The specified file is looked up before them.
+If this option is specified more than once,
+those specified later will be looked up first.
 .It Fl i Ar interface
 Specify the name of the interface from which packets are sent.
 This option applies only if the UDP destination is a multicast address
@@ -46,6 +67,18 @@ or link-local/site-local unicast address
 Specify the destination port number or service name.
 The default value is
 .Ql 9 .
+.El
+.Sh ENVIRONMENT
+.Bl -tag -compact
+.It Ev HOME
+Pathname of the user's home directory.
+.El
+.Sh FILES
+.Bl -tag -compact
+.It Pa $HOME/.sendwol
+User's MAC address database file.
+.It Pa /etc/ethers
+System Ethernet address database file.
 .El
 .Sh EXIT STATUS
 .Ex -std
@@ -76,6 +109,7 @@ and the packets would reach every node on the network link.
 .Xr ip 4 ,
 .Xr ip6 4 ,
 .Xr udp 4 ,
+.Xr ethers 5 ,
 .Xr ifconfig 8
 .Sh COPYRIGHT
 Copyright \(co 2022

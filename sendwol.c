@@ -28,6 +28,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/param.h>
 #include <sys/ioctl.h>
 
 #include <net/if.h>
@@ -61,12 +62,25 @@ struct magic_packet {
 	struct macaddr mp_target[MP_TARGET_REP];
 } __attribute__((__packed__));
 
+/*
+ * database list
+ */
+struct dblist {
+	struct dblist *dbl_next;
+	const char *dbl_path;
+};
 
 static int brd_connect(int domain, const char *restrict servname,
 		const char *restrict interface);
 static struct magic_packet *build_magicpacket(const struct macaddr *target);
+static void free_dblist(struct dblist *head);
+static char *home_sendwol(void);
+static struct macaddr *lookup_dblist(const struct dblist *restrict head,
+		const char *restrict hostname);
 static struct macaddr *mac_aton(const char *a);
 static const char *multicast_if(int fd, int domain, const char *interface);
+static int push_dblist(struct dblist **restrict headp,
+		const char *restrict path);
 static int udp_connect(int domain, const char *restrict nodename,
 		const char *restrict servname, const char *restrict interface);
 static void usage(void);
@@ -76,12 +90,30 @@ main(int argc, char *argv[])
 {
 	int c, fd, yes;
 	int broadcast, domain, forcev4, forcev6;
-	char *interface, *nodename, *servname;
+	char *homesendwol, *interface, *nodename, *servname;
+	struct dblist *list;
 	struct macaddr *target;
 	struct magic_packet *packet;
 	ssize_t written;
 
 	(void)setlocale(LC_ALL, "");
+
+	list = NULL;
+	if (push_dblist(&list, "/etc/ethers") == -1)
+		goto dberror;
+
+	homesendwol = home_sendwol();
+	if (homesendwol != NULL) {
+		if (push_dblist(&list, homesendwol) == -1) {
+dberror:		warn(NULL);
+			warnx("database files are not available");
+			free_dblist(list);
+			list = NULL;
+		}
+	} else {
+		warn(NULL);
+		warnx("~/.sendwol is not available");
+	}
 
 	forcev4 = 0;
 	forcev6 = 0;
@@ -89,7 +121,7 @@ main(int argc, char *argv[])
 	interface = NULL;
 	nodename = NULL;
 	servname = "9";
-	while ((c = getopt(argc, argv, "46ba:h:i:p:s:")) != -1)
+	while ((c = getopt(argc, argv, "46ba:h:f:i:p:s:")) != -1)
 		switch (c) {
 		case '4':
 			forcev4 = 1;
@@ -103,6 +135,16 @@ main(int argc, char *argv[])
 		case 'a':
 		case 'h':
 			nodename = optarg;
+			break;
+		case 'f':
+			if (list == NULL)
+				break;
+			if (push_dblist(&list, optarg) == -1) {
+				warn(NULL);
+				warnx("database files are not available");
+				free_dblist(list);
+				list = NULL;
+			}
 			break;
 		case 'i':
 			interface = optarg;
@@ -141,14 +183,20 @@ main(int argc, char *argv[])
 	for (; *argv != NULL; argv++) {
 		target = mac_aton(*argv);
 		if (target == NULL) {
-			warnx("%s: invalid MAC address", *argv);
-			continue;
+			target = lookup_dblist(list, *argv);
+			if (target == NULL) {
+				warnx("%s: invalid MAC address"
+						" or unknown host", *argv);
+				continue;
+			}
 		}
 		packet = build_magicpacket(target);
 		written = write(fd, packet, sizeof(*packet));
 		if (written != sizeof(*packet))
 			err(1, "write");
 	}
+
+	free_dblist(list);
 
 	if (close(fd) == -1)
 		err(1, "close");
@@ -236,6 +284,70 @@ build_magicpacket(const struct macaddr *target)
 	return &mp;
 }
 
+static void
+free_dblist(struct dblist *head)
+{
+	struct dblist *tmp;
+
+	while ((tmp = head) != NULL) {
+		head = head->dbl_next;
+		free(tmp);
+	}
+}
+
+static char *
+home_sendwol(void)
+{
+#define HOME_SENDWOL	"%s/.sendwol"
+	int length;
+	char *buffer, *home;
+
+	home = getenv("HOME");
+	if (home == NULL)
+		return NULL;
+
+	length = snprintf(NULL, 0, HOME_SENDWOL, home) + 1;
+	buffer = (char *)malloc(length);
+	if (buffer == NULL)
+		return NULL;
+
+	snprintf(buffer, length, HOME_SENDWOL, home);
+
+	return buffer;
+}
+
+static struct macaddr *
+lookup_dblist(const struct dblist *restrict head,
+		const char *restrict hostname)
+{
+	int elem;
+	FILE *fp;
+	struct macaddr *res;
+	char line[BUFSIZ];	/* I have no idea how much buffer is needed */
+	char host[MAXHOSTNAMELEN];	/* This is also */
+	char addrstr[18];
+
+	for (; head != NULL; head = head->dbl_next) {
+		fp = fopen(head->dbl_path, "r");
+		if (fp == NULL)
+			continue;
+		while (fgets(line, sizeof(line), fp) != NULL) {
+			if (line[0] == '#')
+				continue;
+			elem = sscanf(line, "%s%s", addrstr, host);
+			if (elem < 2)
+				continue;
+			if (strcmp(hostname, host) == 0) {
+				(void)fclose(fp);
+				return mac_aton(addrstr);	/* found */
+			}
+		}
+		(void)fclose(fp);
+	}
+
+	return NULL;
+}
+
 static struct macaddr *
 mac_aton(const char *a)
 {
@@ -286,6 +398,22 @@ multicast_if(int fd, int domain, const char *interface)
 }
 
 static int
+push_dblist(struct dblist **restrict headp, const char *restrict path)
+{
+	struct dblist *temp;
+
+	temp = (struct dblist *)malloc(sizeof(*temp));
+	if (temp == NULL)
+		return -1;
+
+	temp->dbl_next = *headp;
+	temp->dbl_path = path;
+	*headp = temp;
+
+	return 0;
+}
+
+static int
 udp_connect(int domain, const char *restrict nodename,
 		const char *restrict servname, const char *restrict interface)
 {
@@ -328,13 +456,13 @@ udp_connect(int domain, const char *restrict nodename,
 	return fd;
 }
 
-
 static void
 usage(void)
 {
 	(void)fprintf(stderr,
 			"usage: sendwol [-4 | -6]"
-			" [-b | -a address | -h hostname] [-i interface]\n"
-			"               [-p port | -s service] target ...\n");
+			" [-b | -a address | -h hostname] [-f file]\n"
+			"               [-i interface] [-p port | -s service]"
+			" target ...\n");
 	exit(1);
 }
