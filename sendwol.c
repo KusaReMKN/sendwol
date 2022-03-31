@@ -103,17 +103,12 @@ main(int argc, char *argv[])
 		goto dberror;
 
 	homesendwol = home_sendwol();
-	if (homesendwol != NULL) {
+	if (homesendwol != NULL)
 		if (push_dblist(&list, homesendwol) == -1) {
-dberror:		warn(NULL);
-			warnx("database files are not available");
+dberror:		warnx("database files are not available");
 			free_dblist(list);
 			list = NULL;
 		}
-	} else {
-		warn(NULL);
-		warnx("~/.sendwol is not available");
-	}
 
 	forcev4 = 0;
 	forcev6 = 0;
@@ -140,7 +135,6 @@ dberror:		warn(NULL);
 			if (list == NULL)
 				break;
 			if (push_dblist(&list, optarg) == -1) {
-				warn(NULL);
 				warnx("database files are not available");
 				free_dblist(list);
 				list = NULL;
@@ -308,8 +302,10 @@ home_sendwol(void)
 
 	length = snprintf(NULL, 0, HOME_SENDWOL, home) + 1;
 	buffer = (char *)malloc(length);
-	if (buffer == NULL)
+	if (buffer == NULL) {
+		warn("malloc");
 		return NULL;
+	}
 
 	snprintf(buffer, length, HOME_SENDWOL, home);
 
@@ -403,8 +399,10 @@ push_dblist(struct dblist **restrict headp, const char *restrict path)
 	struct dblist *temp;
 
 	temp = (struct dblist *)malloc(sizeof(*temp));
-	if (temp == NULL)
+	if (temp == NULL) {
+		warn("malloc");
 		return -1;
+	}
 
 	temp->dbl_next = *headp;
 	temp->dbl_path = path;

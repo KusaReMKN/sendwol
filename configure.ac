@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([sendwol], [0.10], [https://github.com/KusaReMKN/sendwol/issue])
+AC_INIT([sendwol], [0.11], [https://github.com/KusaReMKN/sendwol/issue])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([sendwol.c])
 AC_CONFIG_HEADERS([config.h])
