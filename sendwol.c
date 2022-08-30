@@ -88,7 +88,7 @@ static void usage(void);
 int
 main(int argc, char *argv[])
 {
-	int c, fd, yes;
+	int c, fd;
 	int broadcast, domain, forcev4, forcev6;
 	char *homesendwol, *interface, *nodename, *servname;
 	struct dblist *list;
@@ -170,9 +170,6 @@ dberror:		warnx("database files are not available");
 	fd = broadcast
 		? brd_connect(domain, servname, interface)
 		: udp_connect(domain, nodename, servname, interface);
-	yes = 1;
-	if (setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &yes, sizeof(yes)) == -1)
-		err(1, "SO_BROADCAST");
 
 	for (; *argv != NULL; argv++) {
 		target = mac_aton(*argv);
@@ -202,7 +199,7 @@ static int
 brd_connect(int domain, const char *restrict servname,
 		const char *restrict interface)
 {
-	int fd, port;
+	int fd, port, yes;
 	char *cause, *endptr;
 	struct servent *sp;
 	struct ifaddrs *ifa, *res;
@@ -236,6 +233,13 @@ brd_connect(int domain, const char *restrict servname,
 		fd = socket(ifa->ifa_broadaddr->sa_family, SOCK_DGRAM, 0);
 		if (fd == -1) {
 			cause = "socket";
+			continue;
+		}
+
+		yes = 1;
+		if (setsockopt(fd, SOL_SOCKET, SO_BROADCAST,
+					&yes, sizeof(yes)) == -1) {
+			cause = "SO_BROADCAST";
 			continue;
 		}
 
