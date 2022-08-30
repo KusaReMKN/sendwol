@@ -318,7 +318,6 @@ lookup_dblist(const struct dblist *restrict head,
 {
 	int elem;
 	FILE *fp;
-	struct macaddr *res;
 	char line[BUFSIZ];	/* I have no idea how much buffer is needed */
 	char host[MAXHOSTNAMELEN];	/* This is also */
 	char addrstr[18];
