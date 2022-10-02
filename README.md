@@ -17,46 +17,8 @@ Multicast to all link-local nodes on IPv4:
 More details, refer the man page.
 
 ```console
-% man ./sendwol.1	# instantly
-% man sendwol		# after installation
+% man ./sendwol.1
 ```
-
-
-## Installation
-
-1. Download the tarball from [releases page][].
-
-2. Extract them.
-	```console
-	% tar xvf sendwol-*.**.tar.gz
-	```
-
-3. Change the working directory.
-	```console
-	% cd sendwol-*/.
-	```
-
-4. Generate `Makefile`.
-	```console
-	% ./configure
-	```
-
-5. Build the binary.
-	```console
-	% make
-	```
-
-6. Install them.
-	```console
-	% make install
-	```
-
-## Uninstallation
-
-```console
-% make uninstall
-```
-
 
 ## License
 
