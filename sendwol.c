@@ -222,11 +222,14 @@ brd_connect(int domain, const char *restrict servname,
 	errno = 0;
 	for (ifa = res; ifa != NULL; ifa = ifa->ifa_next) {
 		if (interface != NULL
-				&& strcmp(interface, ifa->ifa_name) != 0
-				|| ifa->ifa_broadaddr == NULL
-				|| ifa->ifa_broadaddr->sa_family != AF_INET
-				&& ifa->ifa_broadaddr->sa_family != AF_INET6
-				|| domain != AF_UNSPEC
+				&& strcmp(interface, ifa->ifa_name) != 0)
+			continue;
+		if (ifa->ifa_broadaddr == NULL)
+			continue;
+		if (ifa->ifa_broadaddr->sa_family != AF_INET
+				&& ifa->ifa_broadaddr->sa_family != AF_INET6)
+			continue;
+		if (domain != AF_UNSPEC
 				&& ifa->ifa_broadaddr->sa_family != domain)
 			continue;
 
