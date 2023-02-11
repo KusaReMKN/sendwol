@@ -1,0 +1,126 @@
+.\"
+.\" Copyright (c) 2022, 2023 KusaReMKN
+.\"     Available under the 2-Clause BSD License
+.\"
+.Dd 11th February 2023
+.Dt SENDWOL 1
+.Os
+.Sh 名称
+.Nm sendwol
+.Nd Wake-on-LAN マジックパケットを送信する
+.Sh 書式
+.Nm
+.Op Fl 4 | Fl 6
+.Op Fl b | Fl a Ar address | Fl h Ar hostname
+.Op Fl f Ar file
+.Op Fl i Ar interface
+.Op Fl p Ar port | Fl s Ar service
+.Ar target ...
+.Sh 解説
+.Nm
+ユーティリティは Wake-on-LAN マジックパケットを UDP で送信して
+.Ar target
+を起動します.
+当然,
+.Ar target
+は Wake-on-LAN の技術に対応している必要があります.
+.Pp
+以下のオプションを利用できます:
+.Bl -tag
+.It Fl 4
+IPv4 の利用を強制します.
+.It Fl 6
+IPv6 の利用を強制します.
+.It Fl b
+インタフェースのブロードキャストアドレスを利用します.
+これはデフォルトです.
+.It Fl a Ar address , Fl h Ar hostname
+送信先のアドレスやホスト名を指定します.
+.It Fl f Ar file
+ネットワークホストの MAC アドレスを格納したデータベースファイルを指定します.
+データは以下の書式で格納されている必要があります.
+.Bd -literal -offset indent
+.Ar MAC-address	host-name
+.Ed
+.Pp
+それぞれの要素は任意の数の空白かタブ文字で区切られます.
+ハッシュ文字
+.Pq Ql #
+で行が始まる場合, その行はコメントとして無視されます.
+.Pp
+デフォルトでは
+.Pa $HOME/.sendwol
+と
+.Pa /etc/ethers
+がこの順番に調べられます.
+このオプションで指定されるファイルはこれらのファイルよりも先に調べられます.
+このオプションを複数指定した場合,
+より後に指定されたファイルが先に調べられます.
+.It Fl i Ar interface
+パケットを送信するインタフェース名を指定します.
+このオプションは UDP の宛先がマルチキャストアドレスの場合
+.Pq IPv4/IPv6 ,
+あるいはリンクローカルユニキャストアドレス,
+サイトローカルユニキャストアドレス
+.Pq IPv6
+のときのみ適用されます.
+.It Fl p Ar port , Fl s Ar service
+宛先のポート番号やサービス名を指定します.
+デフォルト値は
+.Ql 9
+です.
+.El
+.Sh 環境変数
+.Bl -tag -compact
+.It Ev HOME
+ユーザのホームディレクトリのパス名です.
+.El
+.Sh ファイル
+.Bl -tag -compact
+.It Pa $HOME/.sendwol
+ユーザ固有の MAC アドレスデータベースファイルです.
+.It Pa /etc/ethers
+システムの Ethernet アドレスデータベースファイルです.
+.El
+.Sh 終了ステータス
+.Ex -std
+.Sh 使用例
+次の例は Wake-on-LAN マジックパケットをブロードキャストし,
+.Ql 00:00:5e:00:53:34
+と
+.Ql 00:00:5e:00:53:59
+を起動します.
+.Bd -literal -offset indent
+% sendwol '00:00:5e:00:53:34' '00:00:5e:00:53:59'
+.Ed
+.Pp
+次の例はインタフェース
+.Ql eth0
+に接続されている全ノードにマジックパケットを送信します.
+アドレス
+.Ql ff02::1
+はリンクローカル全ノードマルチキャストアドレスと名付けられており,
+パケットはネットワークリンク上のそれぞれのノードに到達します.
+.Bd -literal -offset indent
+% sendwol -6 -a ff02::1 -i eth0 00-00-5e-00-53-15
+.Ed
+.Sh 関連項目
+.Xr getaddrinfo 3 ,
+.Xr getifaddrs 3 ,
+.Xr inet 4 ,
+.Xr inet6 4 ,
+.Xr ip 4 ,
+.Xr ip6 4 ,
+.Xr udp 4 ,
+.Xr ethers 5 ,
+.Xr ifconfig 8
+.Sh 著作権
+Copyright \(co 2022, 2023
+.An KusaReMKN Aq Lk https://github.com/KusaReMKN .
+.br
+この文書とソフトウェアは
+.Sy the 2-Clause BSD License
+の下で利用可能です.
+.Sh バグ
+バグを報告するには issue を立ててください.
+.Aq Lk https://github.com/kusaremkn/sendwol/issue
